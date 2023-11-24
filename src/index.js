@@ -1,10 +1,14 @@
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { createServer } = require('node:http');
 const path = require('path');
 const rfs = require('rotating-file-stream');
 const cors = require('cors');
 const routes = require('./routes');
+const viewEngine = require('./configs/viewEngine');
+require('./configs/connectDb');
+const socket = require('./sockets');
 const {
     notFound,
     errorHandler,
@@ -22,7 +26,9 @@ const devLogStream = rfs.createStream('dev.log', {
     path: path.join(__dirname, 'logs'),
 });
 const app = express();
+const server = createServer(app);
 const port = process.env.PORT || 5000;
+viewEngine(app);
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: false }));
 app.use(helmet());
@@ -40,8 +46,10 @@ app.get('/', (req, res) => {
         mesage: 'Welcome to the server',
     });
 });
+
 app.use(notFound);
 app.use(errorHandler);
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server listening http://localhost:${port}`);
 });
+socket(server);
